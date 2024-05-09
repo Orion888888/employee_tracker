@@ -33,3 +33,4 @@ VALUES	('John', 'Doe', 1, NULL),
        ('Malia','Brown', 6, 5),
        ('Sarah','Lourd', 7, NULL),
        ('Tom','Allen', 8, 7);
+		('Bruce', 'Wayne', 9, NULL),
