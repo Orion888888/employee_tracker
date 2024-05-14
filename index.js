@@ -1,85 +1,105 @@
-const inquire = require('inquirer')
-const {initQ,viewByQ, empQs} = require('./helpers/questions')
-const connection = require('./db/connections')
-let eList = []
-let dList = []
-let rList = []
+const inquire = require('inquirer');
+const { initQ, viewByQ, empQs } = require('./helpers/questions');
+const connection = require('./db/connections');
+
+let eList = [];
+let dList = [];
+let rList = [];
 
 const setEList = () => {
-  eList = []
+  eList = [];
   connection.query(
     `SELECT CONCAT(first_name, ' ', last_name) AS name FROM employee`,
-    (err,data) => { if (err) { throw(err) }
-    data.forEach(name =>{
-      eList.push(`${name.name}`)
-    })
-    eList.push('None')
-  })
-}
+    (err, data) => {
+      if (err) throw err;
+      data.forEach((name) => {
+        eList.push(`${name.name}`);
+      });
+      eList.push('None');
+    }
+  );
+};
 
 const setDList = () => {
   connection.query(
-    `SELECT name FROM department`,
-    (err,data) => { if (err) { throw(err) }
-    data.forEach(dept =>{
-      dList.push(`${dept.dept_name}`)
-    })
-    console.log(dList)
-  })
-}
-
-const getR = async () => {
-	rList = [];
-	try {
-	  const data = await connection.query(`SELECT title FROM role`);
-	  data.rows.forEach(role => {
-		rList.push(`${role.title}`);
-	  });
-	  const answer = await inquire.prompt([{
-		type: 'list',
-		message: 'Choose Employee\'s Role',
-		name: 'role',
-		choices: rList
-	  }]);
-	  return answer.role;
-	} catch (err) {
-	  console.error(err);
-	}
+    `SELECT dept_name FROM department`,
+    (err, data) => {
+      if (err) throw err;
+      data.forEach((dept) => {
+        dList.push(`${dept.dept_name}`);
+      });
+      console.log(dList);
+    }
+  );
 };
-// TODO:console.log(appTitle())
 
+const getR = () => {
+  return new Promise((resolve, reject) => {
+    rList = [];
+    connection.query(
+      `SELECT title FROM role`,
+      (err, data) => {
+        if (err) reject(err);
+        data.forEach((role) => {
+          rList.push(`${role.title}`);
+        });
+        inquire
+          .prompt([
+            {
+              type: 'list',
+              message: 'Choose Employee\'s Role',
+              name: 'role',
+              choices: rList, // 'choices' not 'choice'
+            },
+          ])
+          .then((answer) => {
+            resolve(answer.role);
+          });
+      }
+    );
+  });
+};
 
 function whatToDo() {
-    inquire.prompt(initQ).then((answers) => {
-      switch (answers.wdywtd) {
-        case 'View All Employees (sort by)':
-          displayEmployees();
-          break;
-        case 'Add Employee':
-          addEmployee();
-          break;
-        case 'Update Employee Role':
-          updateRole();
-          break;
-        // Add other cases as necessary
-        case 'Quit':
-          allDone();
-          break;
-        default:
-          console.log('Option not recognized!');
-          whatToDo(); // Re-prompt the questions
-      }
-    })
+  inquire.prompt(initQ).then((answers) => {
+    console.log(answers);
+    switch (answers.wdywtd) {
+      case 'View All Employees (sort by)':
+        displayEmployees();
+        break;
+      case 'Add Employee':
+        addEmployee();
+        break;
+      case 'Remove Employee':
+        removeEmployee();
+        break;
+      case 'Update Employee Role':
+        updateRole();
+        break;
+      case 'Update Employee Manager':
+        updateMgr();
+        break;
+      case 'View Total Utilized Budget By Department':
+        viewBudgetByDept();
+        break;
+      case 'Quit':
+        allDone();
+        break;
+    }
+  });
 }
-  
+
 function displayEmployees() {
-    connection.query(
-      `SELECT employee.id, CONCAT(employee.first_name, ' ', employee.last_name) AS employee, role.title, department.name AS department, role.salary, CONCAT(manager.first_name, ' ', manager.last_name) AS manager FROM employee LEFT JOIN role ON employee.role_id = role.id LEFT JOIN department ON role.department_id = department.id LEFT JOIN employee manager ON manager.id = employee.manager_id`,
-      (err,data) => { if (err) {console.log(err)}
-        console.table(data)
-        dispBy()
+  connection.query(
+    `SELECT employee.id, CONCAT(employee.first_name, ' ', employee.last_name) AS employee, role.title, department.dept_name AS department, role.salary, CONCAT(manager.first_name, ' ', manager.last_name) AS manager FROM employee LEFT JOIN role ON employee.role_id = role.id LEFT JOIN department ON role.dept_id = department.id LEFT JOIN employee manager ON manager.id = employee.manager_id`,
+    (err, data) => {
+      if (err) {
+        console.log(err);
       }
-    )
+      console.table(data);
+      dispBy();
+    }
+  );
 }
 
 function dispBy() {
@@ -97,7 +117,7 @@ function dispBy() {
 
 function dispByDept() {
   connection.query(
-    `SELECT employee.id, CONCAT(employee.first_name, ' ', employee.last_name) AS employee, role.title, department.name, role.salary, CONCAT(manager.first_name, ' ', manager.last_name) AS manager FROM employee JOIN role ON employee.role_id = role.id JOIN department ON role.department_id = department.id LEFT JOIN employee manager ON manager.id = employee.manager_id ORDER BY department.name`,
+    `SELECT employee.id, CONCAT(employee.first_name, ' ', employee.last_name) AS employee, role.title, department.dept_name, role.salary, CONCAT(manager.first_name, ' ', manager.last_name) AS manager FROM employee JOIN role ON employee.role_id = role.id JOIN department ON role.dept_id = department.id LEFT JOIN employee manager ON manager.id = employee.manager_id ORDER BY department.dept_name`,
     (err,data) => { if (err){throw(err)}
       console.table(data)
       dispBy()
@@ -106,7 +126,7 @@ function dispByDept() {
 
 function dispByMgr() {
   connection.query(
-  `SELECT employee.id, CONCAT(employee.first_name, ' ', employee.last_name) AS employee, role.title, department.name, role.salary, CONCAT(manager.first_name, ' ', manager.last_name) AS manager FROM employee LEFT JOIN role ON employee.role_id = role.id LEFT JOIN department ON role.department_id = department.id LEFT JOIN employee manager ON manager.id = employee.manager_id ORDER BY manager`,
+  `SELECT employee.id, CONCAT(employee.first_name, ' ', employee.last_name) AS employee, role.title, department.dept_name, role.salary, CONCAT(manager.first_name, ' ', manager.last_name) AS manager FROM employee LEFT JOIN role ON employee.role_id = role.id LEFT JOIN department ON role.dept_id = department.id LEFT JOIN employee manager ON manager.id = employee.manager_id ORDER BY manager`,
   (err,data) => { if (err){throw(err)}
     console.table(data)
     dispBy()
@@ -114,20 +134,27 @@ function dispByMgr() {
 }
 
 function addEmployee() {
-    let tRole = ''
-    inquire.prompt(empQs)
-    .then((answers) => {
-      console.log(answers)
-      console.log()
-      let tRole = getR()
-    })
-    .then ((answers) => {
-      console.log(answers)
-      
-
-      })
-    
+	inquire
+	  .prompt(empQs)
+	  .then((answers) => {
+		console.log(answers);
+		return getR(); // Using return here
+	  })
+	  .then((role) => { // Role here will be the resolved value of the promise
+		console.log(role);
+		//connection.query...
+	  })
+	  .catch((err) => {
+		console.log(err);
+	  });
   }
+
+//Bonus
+// function removeEmployee() {
+//     console.log('Remove Employee')
+//     whatToDo()
+// }
+
 
 function updateRole() {
     console.log('Update Employee\'s Role')
@@ -146,7 +173,7 @@ function viewBudgetByDept() {
 
 function allDone() {
     console.log('Quit')
-   
+    //process.exit
 }
 
-whatToDo()
+whatToDo();

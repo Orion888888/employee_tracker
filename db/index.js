@@ -1,10 +1,11 @@
-const connection = require('./connections')
+const { Pool } = require('pg');
 
-class DB {
-    // refrence the connection
-    // define functions inside class
-    // funding, creating, updating, deleting
-    // export
-}
+// Create a pool for database connection
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false
+    }
+});
 
-module.exports = DB
+module.exports = pool;
