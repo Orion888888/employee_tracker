@@ -19,7 +19,7 @@ const setEList = () => {
 
 const setDList = () => {
   connection.query(
-    `SELECT dept_name FROM department`,
+    `SELECT name FROM department`,
     (err,data) => { if (err) { throw(err) }
     data.forEach(dept =>{
       dList.push(`${dept.dept_name}`)
@@ -28,24 +28,24 @@ const setDList = () => {
   })
 }
 
-const getR = () => {
-  rList = []
-  connection.query(
-    `SELECT title FROM role`,
-    (err,data) => { if (err) { throw(err) }
-    data.forEach(role =>{
-      rList.push(`${role.title}`)
-    })
-    inquire.prompt([{
-      type: 'list',
-      message: 'Choose Employee\s Role',
-      name: 'role',
-      choice: rList
-    }]).then((answer) => {
-      return answer.role
-    })
-  })
-}
+const getR = async () => {
+	rList = [];
+	try {
+	  const data = await connection.query(`SELECT title FROM role`);
+	  data.rows.forEach(role => {
+		rList.push(`${role.title}`);
+	  });
+	  const answer = await inquire.prompt([{
+		type: 'list',
+		message: 'Choose Employee\'s Role',
+		name: 'role',
+		choices: rList
+	  }]);
+	  return answer.role;
+	} catch (err) {
+	  console.error(err);
+	}
+};
 // TODO:console.log(appTitle())
 
 
@@ -74,7 +74,7 @@ function whatToDo() {
   
 function displayEmployees() {
     connection.query(
-      `SELECT employee.id, CONCAT(employee.first_name, ' ', employee.last_name) AS employee, role.title, department.dept_name AS department, role.salary, CONCAT(manager.first_name, ' ', manager.last_name) AS manager FROM employee LEFT JOIN role ON employee.role_id = role.id LEFT JOIN department ON role.dept_id = department.id LEFT JOIN employee manager ON manager.id = employee.manager_id`,
+      `SELECT employee.id, CONCAT(employee.first_name, ' ', employee.last_name) AS employee, role.title, department.name AS department, role.salary, CONCAT(manager.first_name, ' ', manager.last_name) AS manager FROM employee LEFT JOIN role ON employee.role_id = role.id LEFT JOIN department ON role.department_id = department.id LEFT JOIN employee manager ON manager.id = employee.manager_id`,
       (err,data) => { if (err) {console.log(err)}
         console.table(data)
         dispBy()
@@ -97,7 +97,7 @@ function dispBy() {
 
 function dispByDept() {
   connection.query(
-    `SELECT employee.id, CONCAT(employee.first_name, ' ', employee.last_name) AS employee, role.title, department.dept_name, role.salary, CONCAT(manager.first_name, ' ', manager.last_name) AS manager FROM employee JOIN role ON employee.role_id = role.id JOIN department ON role.dept_id = department.id LEFT JOIN employee manager ON manager.id = employee.manager_id ORDER BY department.dept_name`,
+    `SELECT employee.id, CONCAT(employee.first_name, ' ', employee.last_name) AS employee, role.title, department.name, role.salary, CONCAT(manager.first_name, ' ', manager.last_name) AS manager FROM employee JOIN role ON employee.role_id = role.id JOIN department ON role.department_id = department.id LEFT JOIN employee manager ON manager.id = employee.manager_id ORDER BY department.name`,
     (err,data) => { if (err){throw(err)}
       console.table(data)
       dispBy()
@@ -106,7 +106,7 @@ function dispByDept() {
 
 function dispByMgr() {
   connection.query(
-  `SELECT employee.id, CONCAT(employee.first_name, ' ', employee.last_name) AS employee, role.title, department.dept_name, role.salary, CONCAT(manager.first_name, ' ', manager.last_name) AS manager FROM employee LEFT JOIN role ON employee.role_id = role.id LEFT JOIN department ON role.dept_id = department.id LEFT JOIN employee manager ON manager.id = employee.manager_id ORDER BY manager`,
+  `SELECT employee.id, CONCAT(employee.first_name, ' ', employee.last_name) AS employee, role.title, department.name, role.salary, CONCAT(manager.first_name, ' ', manager.last_name) AS manager FROM employee LEFT JOIN role ON employee.role_id = role.id LEFT JOIN department ON role.department_id = department.id LEFT JOIN employee manager ON manager.id = employee.manager_id ORDER BY manager`,
   (err,data) => { if (err){throw(err)}
     console.table(data)
     dispBy()

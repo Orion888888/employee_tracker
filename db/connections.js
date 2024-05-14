@@ -7,7 +7,7 @@ const pool = new Pool(
       // TODO: Enter PostgreSQL password
       password: 'Thumper1!',
       host: 'localhost',
-      database: 'employee_tracker'
+      database: 'company_db'
     },
     console.log(`Connected to database.`)
   )
