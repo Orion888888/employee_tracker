@@ -1,6 +1,6 @@
 const inquire = require('inquirer');
-const { initQ, viewByQ, empQs } = require('./helpers/questions');
-const connection = require('./db/connections');
+const { initQ, viewByQ, empQs, getR } = require('./helpers/questions'); // Import getR from questions module
+const pool = require('./db/connections'); // Import the pool object
 
 let eList = [];
 let dList = [];
@@ -8,56 +8,25 @@ let rList = [];
 
 const setEList = () => {
   eList = [];
-  connection.query(
+  pool.query( // Changed connection.query to pool.query
     `SELECT CONCAT(first_name, ' ', last_name) AS name FROM employee`,
     (err, data) => {
       if (err) throw err;
-      data.forEach((name) => {
-        eList.push(`${name.name}`);
-      });
+      eList = data.rows.map(row => row.name); // Use data.rows
       eList.push('None');
     }
   );
 };
 
 const setDList = () => {
-  connection.query(
-    `SELECT dept_name FROM department`,
-    (err, data) => {
-      if (err) throw err;
-      data.forEach((dept) => {
-        dList.push(`${dept.dept_name}`);
-      });
-      console.log(dList);
-    }
-  );
-};
-
-const getR = () => {
-  return new Promise((resolve, reject) => {
-    rList = [];
-    connection.query(
-      `SELECT title FROM role`,
-      (err, data) => {
-        if (err) reject(err);
-        data.forEach((role) => {
-          rList.push(`${role.title}`);
-        });
-        inquire
-          .prompt([
-            {
-              type: 'list',
-              message: 'Choose Employee\'s Role',
-              name: 'role',
-              choices: rList, // 'choices' not 'choice'
-            },
-          ])
-          .then((answer) => {
-            resolve(answer.role);
-          });
-      }
-    );
-  });
+	pool.query( // Changed connection.query to pool.query
+	  `SELECT name FROM department`, // Change dept_name to name
+	  (err, data) => {
+		if (err) throw err;
+		dList = data.rows.map(row => row.name); // Use data.rows
+		console.log(dList);
+	  }
+	);
 };
 
 function whatToDo() {
@@ -89,72 +58,121 @@ function whatToDo() {
   });
 }
 
-function displayEmployees() {
-  connection.query(
-    `SELECT employee.id, CONCAT(employee.first_name, ' ', employee.last_name) AS employee, role.title, department.dept_name AS department, role.salary, CONCAT(manager.first_name, ' ', manager.last_name) AS manager FROM employee LEFT JOIN role ON employee.role_id = role.id LEFT JOIN department ON role.dept_id = department.id LEFT JOIN employee manager ON manager.id = employee.manager_id`,
-    (err, data) => {
-      if (err) {
-        console.log(err);
-      }
-      console.table(data);
-      dispBy();
+function displayEmployees(sortBy) {
+    let sql = `SELECT employee.id, CONCAT(employee.first_name, ' ', employee.last_name) AS employee, role.title, department.name AS department, role.salary, CONCAT(manager.first_name, ' ', manager.last_name) AS manager 
+    FROM employee 
+    LEFT JOIN role ON employee.role_id = role.id 
+    LEFT JOIN department ON role.department_id = department.id 
+    LEFT JOIN employee manager ON manager.id = employee.manager_id`;
+    if (sortBy) {
+        sql += ` ORDER BY ${sortBy}`;
     }
-  );
-}
-
+    pool.query(sql, (err, data) => { // Changed connection.query to pool.query
+        if (err) {
+            console.error(err);
+            return;
+        }
+        console.table(data.rows); // Use data.rows to display the result
+        dispBy();
+    });
+} 
+  
 function dispBy() {
-  inquire.prompt(viewByQ).then((answers) => {
-    switch (answers.viewBy) {
-      case 'Department': dispByDept();
-      break;
-      case 'Manager': dispByMgr();
-      break;
-      case 'Want to do something else?': whatToDo();
-      break;
-    }
-  })
+	inquire.prompt(viewByQ).then((answers) => {
+	  switch (answers.viewBy) {
+		case 'Department':
+		  dispByDept();
+		  break;
+		case 'Manager':
+		  dispByMgr();
+		  break;
+		case 'Want to do something else?':
+		  whatToDo();
+		  break;
+	  }
+	});
 }
 
 function dispByDept() {
-  connection.query(
+  pool.query( // Changed connection.query to pool.query
     `SELECT employee.id, CONCAT(employee.first_name, ' ', employee.last_name) AS employee, role.title, department.dept_name, role.salary, CONCAT(manager.first_name, ' ', manager.last_name) AS manager FROM employee JOIN role ON employee.role_id = role.id JOIN department ON role.dept_id = department.id LEFT JOIN employee manager ON manager.id = employee.manager_id ORDER BY department.dept_name`,
     (err,data) => { if (err){throw(err)}
-      console.table(data)
-      dispBy()
+      console.table(data.rows); // Use data.rows to display the result
+      dispBy();
     })
 }
 
 function dispByMgr() {
-  connection.query(
+  pool.query( // Changed connection.query to pool.query
   `SELECT employee.id, CONCAT(employee.first_name, ' ', employee.last_name) AS employee, role.title, department.dept_name, role.salary, CONCAT(manager.first_name, ' ', manager.last_name) AS manager FROM employee LEFT JOIN role ON employee.role_id = role.id LEFT JOIN department ON role.dept_id = department.id LEFT JOIN employee manager ON manager.id = employee.manager_id ORDER BY manager`,
   (err,data) => { if (err){throw(err)}
-    console.table(data)
-    dispBy()
+    console.table(data.rows); // Use data.rows to display the result
+    dispBy();
   })
 }
 
 function addEmployee() {
-	inquire
-	  .prompt(empQs)
-	  .then((answers) => {
-		console.log(answers);
-		return getR(); // Using return here
-	  })
-	  .then((role) => { // Role here will be the resolved value of the promise
-		console.log(role);
-		//connection.query...
-	  })
-	  .catch((err) => {
-		console.log(err);
-	  });
-  }
+    pool.connect((err, client, done) => {
+        if (err) {
+            console.error('Error fetching client from pool', err);
+            return;
+        }
+        inquire
+            .prompt(empQs)
+            .then((answers) => {
+                console.log(answers);
+                return pool.query(`SELECT id, title FROM role`);
+            })
+            .then((result) => {
+                const roleChoices = result.rows.map(role => ({ name: role.title, value: role.id }));
+                return inquire.prompt({
+                    type: 'list',
+                    name: 'roleId',
+                    message: 'Choose a role:',
+                    choices: roleChoices,
+                }).then((answer) => {
+                    console.log("Selected role ID:", answer.roleId);
+                    // Insert the new employee into the database with the selected role ID
+                    return pool.query(
+                        `INSERT INTO employee (first_name, last_name, role_id) VALUES ($1, $2, $3)`,
+                        [answers.fName, answers.lName, answer.roleId]
+                    );
+                });
+            })
+            .then(() => {
+                console.log("Employee added successfully!");
+                done();
+                whatToDo();
+            })
+            .catch((err) => {
+                console.log(err);
+                done();
+            });
+    });
+}
 
-//Bonus
-// function removeEmployee() {
-//     console.log('Remove Employee')
-//     whatToDo()
-// }
-
+// Function to remove an employee
+async function removeEmployee() {
+    try {
+        const data = await pool.query(`SELECT id, CONCAT(first_name, ' ', last_name) AS employee FROM employee`); // Changed connection.query to pool.query
+        if (data.rows.length === 0) {
+            console.log("No employees found.");
+            return;
+        }
+        const employeeChoices = data.rows.map(emp => ({ name: emp.employee, value: emp.id }));
+        const answer = await inquire.prompt([{
+            type: 'list',
+            message: 'Choose employee to remove',
+            name: 'employee',
+            choices: employeeChoices
+        }]);
+        const deletedEmp = await pool.query(`DELETE FROM employee WHERE id = $1`, [answer.employee]); // Changed connection.query to pool.query
+        console.log(`${deletedEmp.rowCount} employee deleted successfully.`);
+        dispBy();
+    } catch (err) {
+        console.error("Error removing employee: ", err);
+    }
+}
 
 function updateRole() {
     console.log('Update Employee\'s Role')
@@ -176,4 +194,6 @@ function allDone() {
     //process.exit
 }
 
+setEList();
+setDList();
 whatToDo();
