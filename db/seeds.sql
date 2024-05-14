@@ -1,31 +1,23 @@
--- department TABLE
-INSERT INTO department (name) -- Do not have to include id which is SERIAL
-VALUES 	('Marketing'),
-		('Sales'),
-		('Information Technology'),
-		('Customer Service'),
-		('Human Resources');
+\c employee_tracker;
 
--- role TABLE
-INSERT INTO role (title, salary, department_id)
-VALUES 	('Designer', 65000, 1),
-		('Video Editor', 50000, 1),
-		('Company Representative', 95000, 2),
-		('Sales Consultant', 75000, 2),
-		('Data Analyst', 65000, 3),
-		('Data Manager', 85000, 3),
-		('Customer Service Rep', 45000, 4),
-		('Customer Service Manager', 80000, 4),
-		('Talent Aquisition', 75000, 5),
-		('Human Resources Officer', 70000, 5);
+INSERT INTO department (name)
+VALUES ('Engineering'),
+       ('Finance'),
+       ('Legal'),
+       ('Sales');
 
-	-- Join department and role
-		-- SELECT role.title, role.salary, department.name FROM role JOIN department ON department.id = role.department_id;
-		-- SELECT role.title AS "Job Title", role.salary AS "Salary", department.name AS "Department" FROM role JOIN department ON department.id = role.department_id;
+INSERT INTO role (title, salary ,department_id)
+VALUES ('Sales Lead', 100000, 4),
+       ('Sales Person', 80000, 4),
+       ('Lead Engineer', 150000, 1),
+       ('Software Engineer', 120000, 1),
+       ('Account Manager', 160000, 2),
+       ('Accountant', 125000, 2),
+       ('Legal Team Lead', 250000, 3),
+       ('Lawyer', 190000, 3);
 
--- employee TABLE
-INSERT INTO employee (first_name, last_name, role_id, manager_id) 
-VALUES	('John', 'Doe', 1, NULL),
+INSERT INTO employee (first_name, last_name, role_id, manager_id)
+VALUES ('John', 'Doe', 1, NULL),
        ('Mike','Chan', 2, 1),
        ('Ashley','Rodriguez', 3, NULL),
        ('Kevin','Tupik', 4, 3),
@@ -33,4 +25,3 @@ VALUES	('John', 'Doe', 1, NULL),
        ('Malia','Brown', 6, 5),
        ('Sarah','Lourd', 7, NULL),
        ('Tom','Allen', 8, 7);
-		('Bruce', 'Wayne', 9, NULL),
