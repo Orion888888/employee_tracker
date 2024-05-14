@@ -51,8 +51,24 @@ const getR = () => {
 
 function whatToDo() {
     inquire.prompt(initQ).then((answers) => {
-      console.log(answers)
-
+      switch (answers.wdywtd) {
+        case 'View All Employees (sort by)':
+          displayEmployees();
+          break;
+        case 'Add Employee':
+          addEmployee();
+          break;
+        case 'Update Employee Role':
+          updateRole();
+          break;
+        // Add other cases as necessary
+        case 'Quit':
+          allDone();
+          break;
+        default:
+          console.log('Option not recognized!');
+          whatToDo(); // Re-prompt the questions
+      }
     })
 }
   

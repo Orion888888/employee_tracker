@@ -1,4 +1,4 @@
-const connection = require('./connection')
+const connection = require('./connections')
 
 class DB {
     // refrence the connection
