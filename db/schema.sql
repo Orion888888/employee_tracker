@@ -3,31 +3,28 @@ CREATE DATABASE company_db;
 
 \c company_db;
 
-CREATE TABLE department (
-	id SERIAL PRIMARY KEY,
-	name VARCHAR(30) UNIQUE NOT NULL
+CREATE TABLE department(
+    id SERIAL PRIMARY KEY NOT NULL, 
+    name VARCHAR(30)
 );
 
-CREATE TABLE role (
-	id SERIAL PRIMARY KEY,
-	title VARCHAR(30) UNIQUE NOT NULL,
-	salary DECIMAL NOT NULL,
-	department_id INTEGER NOT NULL,
-	FOREIGN KEY (department_id) 
+CREATE TABLE role(
+    id SERIAL PRIMARY KEY NOT NULL, 
+    title VARCHAR(30),
+    salary DECIMAL,
+    department INTEGER,
+    FOREIGN KEY (department)
     REFERENCES department(id)
-	ON DELETE SET NULL 
+    ON DELETE SET NULL
 );
 
-CREATE TABLE employee (
-    id SERIAL PRIMARY KEY,
-    first_name VARCHAR(30) NOT NULL,
-    last_name VARCHAR(30) NOT NULL,
-    role_id INTEGER NOT NULL,
+CREATE TABLE employee(
+    id SERIAL PRIMARY KEY NOT NULL, 
+    first_name VARCHAR(30),
+    last_name VARCHAR(30),
+    role_id INTEGER,
+    manager_id INTEGER REFERENCES employee(id), 
     FOREIGN KEY (role_id)
-        REFERENCES role(id)
-        ON DELETE SET NULL, 
-    manager_id INTEGER,
-    FOREIGN KEY (manager_id) 
-        REFERENCES employee(id)
-        ON DELETE SET NULL 
+    REFERENCES role(id)
+    ON DELETE SET NULL
 );

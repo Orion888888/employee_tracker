@@ -1,4 +1,5 @@
 const inquire = require('inquirer');
+const pool = require('../db/connections');
 
 const initQ = [
     {
@@ -15,7 +16,7 @@ const initQ = [
             'Quit'
         ]
     },
-]
+];
 
 const viewByQ = [
     {
@@ -28,19 +29,20 @@ const viewByQ = [
             'Want to do something else?'
         ]
     },
-]
+];
 
 const empQs = [
     {
         type: 'input',
         message: 'Enter New Employee\'s First Name',
         name: 'fName',
-    },{
+    },
+    {
         type: 'input',
         message: 'Enter New Employee\'s Last Name',
         name: 'lName',
     }
-]
+];
 
 const uRoleQs = [
     {
@@ -48,31 +50,28 @@ const uRoleQs = [
         message: 'Which Employee(by ID)?',
         name: 'id',
     }
-]
-
-const pool = require('../db/connections');
+];
 
 const getR = () => {
   return new Promise((resolve, reject) => {
-    pool.query(
-      `SELECT id, title FROM role`,
-      (err, data) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        if (data.rows.length === 0) {
-          reject(new Error('No roles found.'));
-          return;
-        }
-        const roleChoices = data.rows.map(role => ({ name: role.title, value: role.id }));
-        resolve(roleChoices);
-      }
-    );
+      pool.query(
+          `SELECT id, title FROM role`,
+          (err, data) => {
+              if (err) {
+                  console.error('Error fetching roles:', err);
+                  reject(err);
+                  return;
+              }
+              if (data.rows.length === 0) {
+                  console.error('No roles found.');
+                  reject(new Error('No roles found.'));
+                  return;
+              }
+              const roleChoices = data.rows.map(role => ({ name: role.title, value: role.id }));
+              resolve(roleChoices);
+          }
+      );
   });
 };
 
-module.exports = { getR };
-
-
-module.exports = { initQ, viewByQ, empQs, getR };
+module.exports = { initQ, viewByQ, empQs, uRoleQs, getR };
