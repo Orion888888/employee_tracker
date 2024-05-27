@@ -16,7 +16,8 @@ if (process.env.DATABASE_URL) {
         user: 'postgres',
         password: 'Thumper1!',
         host: 'localhost',
-        database: 'company_db'
+        database: 'company_db',
+        port: 5432 // Default PostgreSQL port, add this line if it's missing
     });
 }
 

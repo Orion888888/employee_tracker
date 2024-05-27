@@ -1,6 +1,6 @@
 const inquire = require('inquirer')
 const {initQ,viewByQ, empQs} = require('./helpers/questions')
-const pool = require('./db/connections')
+const pool = require('./db/connection')
 pool.connect()
 function whatToDo() {
     inquire.prompt(initQ).then((answers) => {
