@@ -14,7 +14,7 @@
 
   [Questions](#questions)
 
-  [Walk-through video](#video)
+  [Walk-through](#video)
 
   ## Description
 
@@ -45,5 +45,6 @@
 
   GitHub: <a href="https://github.com/orion888888"> orion888888</a>
 
-  ## Walk-through video 
-  
+  ## Walk-through Video 
+
+  [Walk-through video](./assets/employee_tracker1.mp4)
