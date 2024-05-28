@@ -19,11 +19,15 @@ pool.connect();
 
 //these are the functions for the menu 
 function getDepartments(){
-    pool.query('SELECT * FROM department', function (err, {rows}) {
-        console.table(rows);
-        tracker();
-        });
-    };
+  pool.query('SELECT * FROM department', function (err, {rows}) {
+      if (err) {
+          console.error(err);
+          return;
+      }
+      console.table(rows);
+      tracker();
+  });
+}
 
 function getEmployees(){
     pool.query("SELECT employee.id, employee.first_name, employee.last_name, role.title, department.name, role.salary, CONCAT(manager.first_name,' ',manager.last_name) as manager FROM employee LEFT JOIN role on employee.role_id = role.id LEFT JOIN department on role.department = department.id LEFT JOIN employee manager on manager.id = employee.manager_id",
@@ -56,97 +60,109 @@ function addDepartment(){
         })
     };
 
-function addRole(){
-    var deptList = [] ;
-    pool.query(`SELECT id, name FROM department`, (err, {rows})=>{
-        let depts = rows;
-       for (let i = 0; i < depts.length; i++){
-        deptList.push({name: depts[i].name, value: depts[i].id});
-       }
-    });
-    inquirer.prompt([{
-        type: 'input',
-        name: 'roleName',
-        message: 'What is the title of the new role?'
-    },
-    {
-        type: 'input',
-        name: 'salary',
-        message: 'What is the salary for this position?'
-    },
-    {
-        type: 'list',
-        name: 'department',
-        message: 'What department is this position in?',
-        choices: deptList
-    }
-]).then((answer) => {
-        pool.query(`INSERT INTO role(title, salary, department) VALUES ($1, $2, $3)`, 
-        [`${answer.roleName}`, `${answer.salary}`, `${answer.department}`],
-        function(err,res){
-            if (err) {console.log(err)}
-            else console.log('New role added')}
-        )
-        tracker();
-    })
-}
-
-
+    async function addRole(){
+      var deptList = [] ;
+      try {
+          const { rows: depts } = await pool.query(`SELECT id, name FROM department`);
+          deptList = depts.map(dept => ({ name: dept.name, value: dept.id }));
+      } catch (err) {
+          console.error(err);
+          return;
+      }
+  
+      inquirer.prompt([
+          {
+              type: 'input',
+              name: 'roleName',
+              message: 'What is the title of the new role?'
+          },
+          {
+              type: 'input',
+              name: 'salary',
+              message: 'What is the salary for this position?'
+          },
+          {
+              type: 'list',
+              name: 'department',
+              message: 'What department is this position in?',
+              choices: deptList
+          }
+      ]).then((answer) => {
+          pool.query(`INSERT INTO role(title, salary, department) VALUES ($1, $2, $3)`, 
+          [answer.roleName, answer.salary, answer.department],
+          function(err, res){
+              if (err) {
+                  console.log(err);
+              } else {
+                  console.log('New role added');
+              }
+              tracker();
+          });
+      });
+  }
 
 function addEmployee(){
-    var roleList = [] ;
-    pool.query(`SELECT id, title FROM role`, (err, {rows})=>{
-        let titles = rows;
-       for (let i = 0; i < titles.length; i++){
-        roleList.push({name: titles[i].title, value: titles[i].id});
-       }
-    });
-    var employeeList = [];
-    pool.query(`SELECT id, first_name, last_name FROM employee`, (err, {rows})=>{
-        let managers = rows;
-        for (let i = 0; i < managers.length; i++){
-            employeeList.push({name: managers[i].first_name + ' '+ managers[i].last_name, value: managers[i].id})
-        }
+  var roleList = [] ;
+  pool.query(`SELECT id, title FROM role`, (err, {rows})=>{
+      if (err) {
+          console.log(err);
+          return;
+      }
+      let titles = rows;
+      for (let i = 0; i < titles.length; i++){
+          roleList.push({name: titles[i].title, value: titles[i].id});
+      }
 
-    })
+      var employeeList = [];
+      pool.query(`SELECT id, first_name, last_name FROM employee`, (err, {rows})=>{
+          if (err) {
+              console.log(err);
+              return;
+          }
+          let managers = rows;
+          for (let i = 0; i < managers.length; i++){
+              employeeList.push({name: managers[i].first_name + ' '+ managers[i].last_name, value: managers[i].id});
+          }
 
-    inquirer.prompt(
-        [
-            {
-                type: 'input',
-                name: 'firstName',
-                message: "What is the employee's first name?"
-            },
-            { 
-                type: 'input',
-                name: 'lastName',
-                message: "What is the employee's last name?"                
-            },
-            {
-                type: 'list',
-                name: 'role',
-                message: 'What role should the employee have?',
-                choices: roleList
-            },
-            {
-                type: 'list',
-                name: 'manager',
-                message: "Who is the employee's manager?",
-                choices: employeeList
-            }
-        ]
-    ).then(
-        (answer) => {
-            pool.query(`INSERT INTO employee(first_name, last_name, role_id, manager_id) VALUES ($1, $2, $3, $4)`, [`${answer.firstName}`,`${answer.lastName}`,`${answer.role}`,`${answer.manager}`],
-             function(err,res){
-                if (err) {console.log(err)}
-                else console.log('New employee added');
-                tracker();
-            })
-                }
-    )
-}; 
-
+          inquirer.prompt(
+              [
+                  {
+                      type: 'input',
+                      name: 'firstName',
+                      message: "What is the employee's first name?"
+                  },
+                  { 
+                      type: 'input',
+                      name: 'lastName',
+                      message: "What is the employee's last name?"                
+                  },
+                  {
+                      type: 'list',
+                      name: 'role',
+                      message: 'What role should the employee have?',
+                      choices: roleList
+                  },
+                  {
+                      type: 'list',
+                      name: 'manager',
+                      message: "Who is the employee's manager?",
+                      choices: employeeList
+                  }
+              ]
+          ).then(
+              (answer) => {
+                  pool.query(`INSERT INTO employee(first_name, last_name, role_id, manager_id) VALUES ($1, $2, $3, $4)`, 
+                  [`${answer.firstName}`,`${answer.lastName}`,`${answer.role}`,`${answer.manager}`],
+                  function(err,res){
+                      if (err) {console.log(err)}
+                      else console.log('New employee added');
+                      tracker();
+                  })
+              }
+          );
+      });
+  });
+}
 
 function updateEmployee(){
     var empList = [];
