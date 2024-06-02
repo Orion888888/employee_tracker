@@ -1,12 +1,7 @@
-const express = require('express');
+
 const inquirer = require('inquirer');
 const { Pool } = require('pg');
 
-const PORT = process.env.PORT || 3002;
-const app = express();
-
-app.use(express.urlencoded({ extended: false }));
-app.use(express.json());
 
 // PostgreSQL connection configuration
 const pool = new Pool({
@@ -30,7 +25,7 @@ function getDepartments(){
 }
 
 function getEmployees(){
-    pool.query("SELECT employee.id, employee.first_name, employee.last_name, role.title, department.name, role.salary, CONCAT(manager.first_name,' ',manager.last_name) as manager FROM employee LEFT JOIN role on employee.role_id = role.id LEFT JOIN department on role.department = department.id LEFT JOIN employee manager on manager.id = employee.manager_id",
+    pool.query("SELECT employee.id, employee.first_name, employee.last_name, role.title, department.name, role.salary, CONCAT(manager.first_name,' ',manager.last_name) as manager FROM employee LEFT JOIN role on employee.role_id = role.id LEFT JOIN department on role.department_id = department.id LEFT JOIN employee manager on manager.id = employee.manager_id;",
      function (err, {rows}) {
         console.table(rows);
         tracker();
@@ -39,7 +34,7 @@ function getEmployees(){
 
 
 function getRoles(){
-    pool.query('SELECT role.title, role.id, department.name, role.salary FROM role LEFT JOIN department on role.department = department.id', function (err, {rows}) {
+    pool.query('SELECT role.title, role.id, department.name, role.salary FROM role LEFT JOIN department on role.department_id = department.id', function (err, {rows}) {
             console.table(rows);
             tracker();
             });
@@ -83,13 +78,13 @@ function addDepartment(){
           },
           {
               type: 'list',
-              name: 'department',
+              name: 'department_id',
               message: 'What department is this position in?',
               choices: deptList
           }
       ]).then((answer) => {
-          pool.query(`INSERT INTO role(title, salary, department) VALUES ($1, $2, $3)`, 
-          [answer.roleName, answer.salary, answer.department],
+          pool.query(`INSERT INTO role(title, salary, department_id) VALUES ($1, $2, $3)`, 
+          [answer.roleName, answer.salary, answer.department_id],
           function(err, res){
               if (err) {
                   console.log(err);
@@ -114,7 +109,7 @@ function addEmployee(){
       }
 
       var employeeList = [];
-      pool.query(`SELECT id, first_name, last_name FROM employee`, (err, {rows})=>{
+      pool.query(`SELECT  * FROM employee`, (err, {rows})=>{
           if (err) {
               console.log(err);
               return;
@@ -254,10 +249,3 @@ const tracker = () => {
 console.log('Employee Tracker!');
 tracker();
 
-app.use((req, res) => {
-  res.status(404).end();
-});
-
-app.listen(PORT, () => {
-  /*console.log(`Server running on port ${PORT}`); */
-});
