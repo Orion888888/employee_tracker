@@ -47,4 +47,4 @@
 
   ## Walk-through Video 
 
-  [Walk-through video](./assets/employee_tracker1.mp4)
+  [Walk-through video](https://youtu.be/XqaTT69Tb2c?si=akeBTaWTcoLJCPST)
